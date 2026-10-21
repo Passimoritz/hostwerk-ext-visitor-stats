@@ -8,6 +8,7 @@ How many visitors do your sites get? Reads the access logs of your Hostwerk web 
 
 ## What it does
 
+- **Where:** Web servers → Visitors and the dashboard tile – no own sidebar entry since 1.1.0; the full page stays under Extensions → Open
 - Reads the access logs of every Hostwerk web server (Apache and nginx combined format, Caddy JSON) – also rotated and gzipped files
 - Pages, sources (referrers), devices, browsers and systems – roughly, no fingerprinting
 - Bots, crawlers, uptime checks and files like images or scripts are filtered out

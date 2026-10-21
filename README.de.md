@@ -8,6 +8,7 @@ Wie viele Besucher haben deine Seiten? Liest die Zugriffsprotokolle deiner Hostw
 
 ## Was sie kann
 
+- **Wo:** Webserver → Besucher und Übersichtskachel – seit 1.1.0 ohne eigenen Seitenleisten-Eintrag; die ganze Seite bleibt unter Erweiterungen → Öffnen
 - Liest die Zugriffsprotokolle jedes Hostwerk-Webservers (Apache und nginx im Combined-Format, Caddy als JSON) – auch rotierte und gepackte Dateien
 - Seiten, Herkunft (Verweise), Geräte, Browser und Systeme – grob, ohne Fingerabdruck
 - Bots, Crawler, Erreichbarkeits-Prüfungen und Dateien wie Bilder oder Skripte werden herausgefiltert

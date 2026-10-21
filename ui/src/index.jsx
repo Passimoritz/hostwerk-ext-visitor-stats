@@ -208,5 +208,10 @@ function VisitorStatsTile() {
 
 export default {
   pages: { main: VisitorStatsPage },
-  slots: { 'dashboard.tiles': [{ id: 'today', title: 'Visitors today', icon: 'line-chart', size: 'third', Component: VisitorStatsTile }] },
+  slots: {
+    // Seit Hostwerk 3.0 (SDK 3.2) ohne eigenen Seitenleisten-Eintrag ("nav": false) – die ganze Seite als Reiter im passenden Bereich;
+    // Hostwerk blendet dabei ihren Titel aus (Reiter + Herkunftszeile sagen schon, was es ist), die Knöpfe bleiben
+    'web.tabs': [{ id: 'visitors', title: 'Visitors', icon: LineChart, Component: VisitorStatsPage, order: 60 }],
+    'dashboard.tiles': [{ id: 'today', title: 'Visitors today', icon: 'line-chart', size: 'third', Component: VisitorStatsTile }],
+  },
 };
