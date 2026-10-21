@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-hidden="true">
+<defs>
+<linearGradient id="t" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4db0c8"/><stop offset="1" stop-color="#056379"/></linearGradient>
+<radialGradient id="h" cx=".28" cy=".18" r=".9"><stop offset="0" stop-color="#ffffff" stop-opacity=".38"/><stop offset=".55" stop-color="#ffffff" stop-opacity="0"/></radialGradient>
+</defs>
+<style>.g,.o,.w,.s{transform-box:fill-box;transform-origin:50% 50%}@keyframes m{0%{stroke-dashoffset:60}60%,100%{stroke-dashoffset:0}}.g path,.g polyline{stroke-dasharray:60;animation:m 2.8s ease-in-out infinite}@keyframes s{0%,100%{opacity:.35;transform:scale(.55) rotate(0)}50%{opacity:1;transform:scale(1) rotate(45deg)}}.s{animation:s 3s ease-in-out infinite}@media (prefers-reduced-motion:reduce){.g,.o,.w,.s,.g path,.g polyline{animation:none!important}}</style>
+<rect width="64" height="64" rx="16" fill="#0891b2"/>
+<rect width="64" height="64" rx="16" fill="url(#t)"/>
+<rect width="64" height="64" rx="16" fill="url(#h)"/>
+<rect x=".75" y=".75" width="62.5" height="62.5" rx="15.25" fill="none" stroke="#ffffff" stroke-opacity=".22" stroke-width="1.5"/>
+
+<g transform="translate(15 15) scale(1.4167)"><g class="g" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="m19 9-5 5-4-4-3 3"/></g></g>
+<g transform="translate(52 12) scale(.42)"><path class="s" d="M0 -10 C1.2 -2.6 2.6 -1.2 10 0 C2.6 1.2 1.2 2.6 0 10 C-1.2 2.6 -2.6 1.2 -10 0 C-2.6 -1.2 -1.2 -2.6 0 -10Z" fill="#ffffff"/></g>
+</svg>

@@ -1,0 +1,56 @@
+{
+  "$schema": "https://raw.githubusercontent.com/Passimoritz/hostwerk-public/main/sdk/manifest.schema.json",
+  "id": "visitor-stats",
+  "name": {
+    "de": "Besucher-Statistik",
+    "en": "Visitor stats"
+  },
+  "description": {
+    "de": "Wie viele Besucher haben deine Seiten? Liest die Zugriffsprotokolle deiner Hostwerk-Webserver (Apache, nginx, Caddy) aus – ohne Cookies, ohne Fingerabdruck, IP-Adressen nur gekürzt. Seiten, Herkunft, Geräte, Bots herausgefiltert. Alles bleibt auf diesem PC.",
+    "en": "How many visitors do your sites get? Reads the access logs of your Hostwerk web servers (Apache, nginx, Caddy) – no cookies, no fingerprinting, IP addresses only shortened. Pages, sources, devices, bots filtered out. Everything stays on this PC."
+  },
+  "version": "1.0.0",
+  "author": "Hostwerk",
+  "homepage": "https://github.com/Passimoritz/hostwerk-ext-visitor-stats",
+  "license": "MIT",
+  "icon": "icon.svg",
+  "banner": "banner.svg",
+  "color": "#0891b2",
+  "category": "monitoring",
+  "hostwerk": ">=2.11.0",
+  "permissions": [
+    "native"
+  ],
+  "page": {
+    "title": {
+      "de": "Besucher-Statistik",
+      "en": "Visitor stats"
+    },
+    "description": {
+      "de": "Besucher deiner Seiten – ohne Cookies.",
+      "en": "Visitors of your sites – without cookies."
+    },
+    "icon": "line-chart",
+    "nav": {
+      "group": "develop"
+    }
+  },
+  "backend": "server/index.js",
+  "ui": "ui/index.js",
+  "synergies": [
+    {
+      "with": "page-check",
+      "title": {
+        "de": "Beliebte Seiten prüfen",
+        "en": "Check your popular pages"
+      },
+      "text": {
+        "de": "Die meistbesuchten Seiten und die 404-Fehler aus der Besucher-Statistik im Seiten-Check auf Ladezeit, SEO und Barrierefreiheit prüfen.",
+        "en": "Check the most visited pages and the 404s from the visitor stats for speed, SEO and accessibility in Page check."
+      }
+    }
+  ],
+  "provides": [
+    "visitorStats"
+  ]
+}
