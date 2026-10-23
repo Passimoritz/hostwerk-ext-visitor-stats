@@ -1,8 +1,12 @@
 import { useEffect, useState } from 'react';
 import { LineChart, RefreshCw, Globe, FileText, Copy, ShieldCheck, Smartphone, Compass, Monitor, FileQuestion, Code2, Settings2, FolderPlus, RotateCcw, Users } from 'lucide-react';
 import { get, put, post, del, useApi, fmtBytes } from '@hostwerk/api';
-import { Btn, Seg, Empty, Loading, TileEmpty, InfoTip, Callout, SettingRow, Switch, Field, Sparkline, toast, confirmDialog } from '@hostwerk/ui';
+import { Btn, Seg, Empty, Loading, Modal, TileEmpty, InfoTip, Callout, SettingRow, Switch, Field, Sparkline, toast, confirmDialog } from '@hostwerk/ui';
+import * as HUI from '@hostwerk/ui';
 import './style.css';
+
+// Seitenblatt aus Hostwerk (neuere Versionen) – die Seite bleibt daneben sichtbar; ältere Versionen zeigen denselben Inhalt als Dialog
+const Sheet = HUI.SideSheet || Modal;
 
 /*
  * Visitor stats: numbers of the chosen period, a bar chart, top pages, sources, devices and 404s – all from the access
@@ -68,19 +72,19 @@ function Script({ s }) {
     try { const r = await post('/visitor-stats/counter-file'); toast.success(r.files.length === 1 ? 'Counter file in 1 site folder' : `Counter file in ${r.files.length} site folders`); } catch (e) { toast.error(e); }
   };
   return (
-    <div className="card">
-      <div className="card-head"><Code2 size={16} /><h3>Counter script (optional)</h3>
-        <InfoTip title="Counter script">The logs are enough for normal websites. For single-page apps (React, Vue …) or pages served from a cache, put this script into your page. It sets no cookies, stores nothing in the browser and does nothing when Do Not Track is on. Its request goes to your own site and lands in the same log.</InfoTip>
+    <section className="stack vst-sec" aria-label="Counter script">
+      <div className="row-tight"><Code2 size={16} aria-hidden="true" /><b>Counter script (optional)</b>
+        <InfoTip pop title="Counter script">The logs are enough for normal websites. For single-page apps (React, Vue …) or pages served from a cache, put this script into your page. It sets no cookies, stores nothing in the browser and does nothing when Do Not Track is on. Its request goes to your own site and lands in the same log.</InfoTip>
       </div>
-      <div className="card-body stack">
+      <div className="stack">
         <pre className="code-block vst-code">{s.snippet}</pre>
         <div className="row-tight vst-wrap">
           <Btn className="sm" icon={Copy} onClick={copy}>Copy script</Btn>
           <Btn className="sm ghost" icon={FolderPlus} onClick={files}>Put counter file into site folders</Btn>
-          <InfoTip title="Counter file">An empty file “.hostwerk-count” in the site folder answers the script with “OK” instead of “not found” – so the server's error log stays clean. Existing files are left alone.</InfoTip>
+          <InfoTip pop title="Counter file">An empty file “.hostwerk-count” in the site folder answers the script with “OK” instead of “not found” – so the server's error log stays clean. Existing files are left alone.</InfoTip>
         </div>
       </div>
-    </div>
+    </section>
   );
 }
 
@@ -93,23 +97,22 @@ function Settings({ s, q, onSaved }) {
     try { onSaved(await del(`/visitor-stats/data${q}`)); toast.success('Read again'); } catch (e) { toast.error(e); }
   };
   return (
-    <div className="card">
-      <div className="card-head"><Settings2 size={16} /><h3>Settings</h3></div>
-      <div className="card-body">
+    <section className="stack vst-sec" aria-label="Settings">
+      <div>
         <SettingRow title="Count visits from this PC" text="Off = your own clicks on localhost do not count."><Switch checked={!!s.cfg.countLocal} onChange={(v) => save({ countLocal: v })} /></SettingRow>
         <Field label="Keep days" hint="30 to 1000 days."><div className="row-tight"><input className="input sm vst-num-input" inputMode="numeric" aria-label="Keep days" value={days} onChange={(e) => setDays(e.target.value.replace(/\D/g, ''))} /><Btn className="sm" onClick={() => save({ retentionDays: Number(days) })}>Save</Btn></div></Field>
         <Field label="Leave out paths" hint="Starting with, separated by commas – for example /admin, /api"><div className="row-tight"><input className="input sm mono grow" aria-label="Leave out paths" value={ignore} placeholder="/admin, /api" onChange={(e) => setIgnore(e.target.value)} /><Btn className="sm" onClick={() => save({ ignore: ignore.split(',').map((x) => x.trim()).filter(Boolean) })}>Save</Btn></div></Field>
         <Btn className="sm ghost danger" icon={RotateCcw} onClick={reset}>Start over</Btn>
       </div>
-    </div>
+    </section>
   );
 }
 
 function Logs({ s }) {
   return (
-    <div className="card">
-      <div className="card-head"><FileText size={16} /><h3>Logs read</h3>
-        <InfoTip title="Which logs?">The access log every Hostwerk web server writes (Apache and nginx in the combined format, Caddy as JSON), plus log lines from the server's own settings. Rotated and gzipped files are read too – each line counts only once.</InfoTip>
+    <section className="stack vst-sec" aria-label="Logs read">
+      <div className="row-tight"><FileText size={16} aria-hidden="true" /><b>Logs read</b>
+        <InfoTip pop title="Which logs?">The access log every Hostwerk web server writes (Apache and nginx in the combined format, Caddy as JSON), plus log lines from the server's own settings. Rotated and gzipped files are read too – each line counts only once.</InfoTip>
       </div>
       <ul className="vst-logs">
         {s.sites.flatMap((x) => x.logs.map((l) => (
@@ -120,7 +123,20 @@ function Logs({ s }) {
           </li>
         )))}
       </ul>
-    </div>
+    </section>
+  );
+}
+
+/** Einrichten: Einstellungen, Zählskript und gelesene Protokolle – selten gebraucht, darum im Dialog statt vor den Zahlen. */
+function SetupDialog({ s, q, onSaved, onClose }) {
+  const [tab, setTab] = useState('settings');
+  return (
+    <Sheet size="wide" title="Set up visitor stats" onClose={onClose} footer={<Btn onClick={onClose}>Close</Btn>}>
+      <div className="stack">
+        <Seg value={tab} onChange={setTab} options={[{ id: 'settings', label: 'Settings', icon: Settings2 }, { id: 'script', label: 'Counter script', icon: Code2 }, { id: 'logs', label: 'Logs read', icon: FileText }]} />
+        {tab === 'settings' ? <Settings s={s} q={q} onSaved={onSaved} /> : tab === 'script' ? <Script s={s} /> : <Logs s={s} />}
+      </div>
+    </Sheet>
   );
 }
 
@@ -129,6 +145,7 @@ function VisitorStatsPage() {
   const [range, setRange] = useState('week');
   const st = useApi(`/visitor-stats?site=${encodeURIComponent(site)}&range=${range}`, [site, range], { live: false });
   const [busy, setBusy] = useState(false);
+  const [setup, setSetup] = useState(false);
   const q = `?site=${encodeURIComponent(site)}&range=${range}`;
   const scan = async () => { setBusy(true); try { st.setData(await post(`/visitor-stats/scan${q}`)); } catch (e) { toast.error(e); } setBusy(false); };
   useEffect(() => { scan(); }, []); // eslint-disable-line react-hooks/exhaustive-deps -- read new lines once when the page opens
@@ -152,15 +169,14 @@ function VisitorStatsPage() {
           )}
           <Seg options={RANGES} value={range} onChange={setRange} />
           <Btn className="sm ghost" icon={RefreshCw} busy={busy} title="Read new log lines now" aria-label="Read new log lines now" onClick={scan} />
+          {s.sites.length > 0 && <Btn className="sm ghost" icon={Settings2} onClick={() => setSetup(true)}>Set up …</Btn>}
           <InfoTip title="Privacy" icon={ShieldCheck}>No cookies, no fingerprint. IP addresses are shortened (the last part removed) and turned into a hash that changes every day – after two days not even this PC can link visits. Bots, crawlers, uptime checks, images and scripts are left out. Nothing leaves this PC.</InfoTip>
         </div>
       </div>
       {s.error && <Callout kind="err" dismissible={false}>{s.error}</Callout>}
       {!s.sites.length ? <Empty icon={Globe} title="No web server yet" text="Create a web server in Hostwerk – the visitors of its sites show up here." action={<a className="btn primary" href="#/web">Open web servers</a>} /> : !r.hasData ? (
         <>
-          <Empty icon={Users} title="No visitors yet" text={s.cfg.countLocal ? 'As soon as someone opens one of your sites, it shows up here.' : 'As soon as someone opens one of your sites, it shows up here. Your own visits from this PC do not count – switch that on in the settings below to try it out.'} />
-          <div className="grid grid-2 vst-grid"><Logs s={s} /><Settings s={s} q={q} onSaved={st.setData} /></div>
-          <Script s={s} />
+          <Empty icon={Users} title="No visitors yet" text={s.cfg.countLocal ? 'As soon as someone opens one of your sites, it shows up here.' : 'As soon as someone opens one of your sites, it shows up here. Your own visits from this PC do not count – switch that on under “Set up …” to try it out.'} action={<Btn icon={Settings2} onClick={() => setSetup(true)}>Set up …</Btn>} />
         </>
       ) : (
         <>
@@ -174,7 +190,7 @@ function VisitorStatsPage() {
             <div className="card-head"><LineChart size={16} /><h3>{range === 'day' ? 'Page views per hour' : 'Visitors per day'}</h3></div>
             <div className="card-body"><Chart r={r} /></div>
           </div>
-          <div className="grid grid-2 vst-grid">
+          <div className="grid grid-3 vst-grid vst-lists">
             <Bars title="Pages" icon={FileText} rows={r.pages} total={t.views} empty="No page views in this period." mono />
             <Bars title="Sources" icon={Compass} rows={r.refs} total={t.views} empty="Nobody came from another site – visits were direct or from bookmarks." tip={<InfoTip title="Sources">Other websites that linked to yours (search engines, social media …). Links between your own pages do not count. Many apps and browsers send no source at all.</InfoTip>} />
             <Bars title="Devices" icon={Smartphone} rows={r.devices} total={t.visitors} empty="No visitors in this period." />
@@ -182,11 +198,10 @@ function VisitorStatsPage() {
             <Bars title="Systems" icon={Monitor} rows={r.os} total={t.visitors} empty="No visitors in this period." />
             <Bars title="Not found (404)" icon={FileQuestion} rows={r.notFound} empty="No broken links – nobody hit a missing page." mono tip={<InfoTip title="Not found">Pages people asked for that do not exist – often old links. Probes for weak spots (like /wp-login.php) count as bots and are not listed.</InfoTip>} />
           </div>
-          <div className="grid grid-2 vst-grid"><Script s={s} /><Settings s={s} q={q} onSaved={st.setData} /></div>
-          <Logs s={s} />
           <p className="tiny muted vst-foot">{s.lastScan ? `Last read ${new Date(s.lastScan).toLocaleTimeString()}` : ''}</p>
         </>
       )}
+      {setup && <SetupDialog s={s} q={q} onSaved={st.setData} onClose={() => setSetup(false)} />}
     </div>
   );
 }

@@ -77,6 +77,10 @@
   "Open": "Öffnen",
   "Visitors today": "Besucher heute",
   "1 page view": "1 Seitenaufruf",
+  "Set up …": "Einrichten …",
+  "Set up visitor stats": "Besucherstatistik einrichten",
+  "Close": "Schließen",
+  "As soon as someone opens one of your sites, it shows up here. Your own visits from this PC do not count – switch that on under “Set up …” to try it out.": "Sobald jemand eine deiner Websites öffnet, erscheint das hier. Deine eigenen Besuche von diesem PC zählen nicht – schalte das unter „Einrichten …“ ein, um es auszuprobieren.",
   "$patterns": [
     ["Counter file in {} site folders", "Zähldatei in {} Website-Ordnern"],
     ["Last read {}", "Zuletzt gelesen {}"],

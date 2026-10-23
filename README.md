@@ -13,7 +13,7 @@ How many visitors do your sites get? Reads the access logs of your Hostwerk web 
 - Pages, sources (referrers), devices, browsers and systems – roughly, no fingerprinting
 - Bots, crawlers, uptime checks and files like images or scripts are filtered out
 - Today, 7 days, 30 days – per site or all together, plus a tile for the overview
-- Optional tiny counter script (no cookies, honours Do Not Track) for single-page apps
+- Optional tiny counter script (no cookies, honours Do Not Track) for single-page apps – with the settings and the list of logs under “Set up …”, so the numbers come first
 - IP addresses are only stored shortened and turned into a daily changing hash – nothing leaves this PC
 
 ## How it counts

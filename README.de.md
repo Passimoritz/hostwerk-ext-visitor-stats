@@ -13,7 +13,7 @@ Wie viele Besucher haben deine Seiten? Liest die Zugriffsprotokolle deiner Hostw
 - Seiten, Herkunft (Verweise), Geräte, Browser und Systeme – grob, ohne Fingerabdruck
 - Bots, Crawler, Erreichbarkeits-Prüfungen und Dateien wie Bilder oder Skripte werden herausgefiltert
 - Heute, 7 Tage, 30 Tage – je Seite oder alle zusammen, dazu eine Kachel für die Übersicht
-- Auf Wunsch ein winziges Zählskript (ohne Cookies, achtet auf „Do Not Track“) für Single-Page-Apps
+- Auf Wunsch ein winziges Zählskript (ohne Cookies, achtet auf „Do Not Track“) für Single-Page-Apps – samt Einstellungen und gelesenen Protokollen unter „Einrichten …“, damit die Zahlen zuerst kommen
 - IP-Adressen werden nur gekürzt verarbeitet und in einen täglich wechselnden Hash verwandelt – nichts verlässt diesen PC
 
 ## So wird gezählt

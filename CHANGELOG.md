@@ -1,3 +1,7 @@
+## 1.2.0
+
+- Numbers first: settings, counter script and the list of logs moved into “Set up …” (side sheet in newer Hostwerk, dialog before); the six lists stand three per row with equal height and scroll inside, the key figures of a row are equally high; without visitors only the empty state with “Set up …” / Zahlen zuerst: Einstellungen, Zählskript und gelesene Protokolle stehen unter „Einrichten …“ (in neueren Hostwerk-Versionen als Seitenblatt, sonst als Dialog); die sechs Listen stehen zu dritt, gleich hoch und scrollen in sich, die Kennzahlen einer Reihe sind gleich hoch; ohne Besucher nur der Leerzustand mit „Einrichten …“
+
 ## 1.1.0
 
 - Lives where it belongs: Web servers → Visitors and the dashboard tile – no own sidebar entry any more (Hostwerk 3.0+); the full page stays under Extensions → Open and can be pinned in the sidebar settings. / Steckt jetzt dort, wo sie hingehört: Webserver → Besucher und Übersichtskachel – kein eigener Seitenleisten-Eintrag mehr (Hostwerk 3.0+); die ganze Seite bleibt unter Erweiterungen → Öffnen und lässt sich in den Seitenleisten-Einstellungen anheften.
