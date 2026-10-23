@@ -3,6 +3,7 @@
 .vst-grid > .card { align-self: stretch; }
 .vst-lists > .card { display: flex; flex-direction: column; min-height: 0; }
 .vst-lists .vst-bars { max-height: 248px; overflow: auto; }
+.vst-bars:focus-visible { outline: 2px solid var(--accent-ring); outline-offset: -2px; }
 .vst-sec { gap: var(--sp-2); }
 .vst-wrap { flex-wrap: wrap; }
 .vst-chart { margin: 0; }

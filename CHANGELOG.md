@@ -1,3 +1,7 @@
+## 1.2.1
+
+- The lists that scroll inside can be reached with the keyboard, with a visible focus (WCAG) / Die Listen, die in sich scrollen, sind per Tastatur erreichbar, mit sichtbarem Fokus (WCAG)
+
 ## 1.2.0
 
 - Numbers first: settings, counter script and the list of logs moved into “Set up …” (side sheet in newer Hostwerk, dialog before); the six lists stand three per row with equal height and scroll inside, the key figures of a row are equally high; without visitors only the empty state with “Set up …” / Zahlen zuerst: Einstellungen, Zählskript und gelesene Protokolle stehen unter „Einrichten …“ (in neueren Hostwerk-Versionen als Seitenblatt, sonst als Dialog); die sechs Listen stehen zu dritt, gleich hoch und scrollen in sich, die Kennzahlen einer Reihe sind gleich hoch; ohne Besucher nur der Leerzustand mit „Einrichten …“

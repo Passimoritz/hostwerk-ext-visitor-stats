@@ -52,7 +52,7 @@ function Bars({ title, icon: Icon, rows, total, empty, tip, mono }) {
     <div className="card">
       <div className="card-head"><Icon size={16} /><h3>{title}</h3>{tip}</div>
       {!rows.length ? <TileEmpty icon={Icon} text={empty} /> : (
-        <ul className="vst-bars">
+        <ul className="vst-bars" tabIndex={0} aria-label={title}>
           {rows.map(([k, n]) => (
             <li key={k} className="vst-row" title={total ? `${Math.round((n / total) * 100)} %` : undefined}>
               <span className="vst-fill" aria-hidden="true" style={{ width: `${(n / max) * 100}%` }} />

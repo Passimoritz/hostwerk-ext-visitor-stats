@@ -9,7 +9,7 @@
     "de": "Wie viele Besucher haben deine Seiten? Liest die Zugriffsprotokolle deiner Hostwerk-Webserver (Apache, nginx, Caddy) aus – ohne Cookies, ohne Fingerabdruck, IP-Adressen nur gekürzt. Seiten, Herkunft, Geräte, Bots herausgefiltert. Alles bleibt auf diesem PC.",
     "en": "How many visitors do your sites get? Reads the access logs of your Hostwerk web servers (Apache, nginx, Caddy) – no cookies, no fingerprinting, IP addresses only shortened. Pages, sources, devices, bots filtered out. Everything stays on this PC."
   },
-  "version": "1.2.0",
+  "version": "1.2.1",
   "author": "Hostwerk",
   "homepage": "https://github.com/Passimoritz/hostwerk-ext-visitor-stats",
   "license": "MIT",
