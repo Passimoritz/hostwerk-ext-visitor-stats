@@ -1,3 +1,7 @@
+## 1.2.2
+
+- New animated icon and banner in the common Hostwerk style (isometric block). / Neues animiertes Symbol und Banner im gemeinsamen Hostwerk-Stil (isometrischer Block).
+
 ## 1.2.1
 
 - The lists that scroll inside can be reached with the keyboard, with a visible focus (WCAG) / Die Listen, die in sich scrollen, sind per Tastatur erreichbar, mit sichtbarem Fokus (WCAG)
