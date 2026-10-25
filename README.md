@@ -4,7 +4,9 @@
 
 How many visitors do your sites get? Reads the access logs of your Hostwerk web servers (Apache, nginx, Caddy) – no cookies, no fingerprinting, IP addresses only shortened. Pages, sources, devices, bots filtered out. Everything stays on this PC.
 
-[Deutsch](README.de.md) · An official [Hostwerk](https://github.com/Passimoritz/hostwerk-public) extension (SDK 2.7, native extension)
+[Deutsch](README.de.md) · An official [Hostwerk](https://github.com/Passimoritz/hostwerk-public) extension (native extension, Hostwerk 2.11 or newer)
+
+![Screenshot](docs/screenshot.png)
 
 ## What it does
 

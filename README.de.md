@@ -4,7 +4,9 @@
 
 Wie viele Besucher haben deine Seiten? Liest die Zugriffsprotokolle deiner Hostwerk-Webserver (Apache, nginx, Caddy) aus – ohne Cookies, ohne Fingerabdruck, IP-Adressen nur gekürzt. Seiten, Herkunft, Geräte, Bots herausgefiltert. Alles bleibt auf diesem PC.
 
-[English](README.md) · Eine offizielle [Hostwerk](https://github.com/Passimoritz/hostwerk-public) Erweiterung (SDK 2.7, native Erweiterung)
+[English](README.md) · Offizielle [Hostwerk](https://github.com/Passimoritz/hostwerk-public)-Erweiterung (native Erweiterung, ab Hostwerk 2.11)
+
+![Bildschirmfoto](docs/screenshot.de.png)
 
 ## Was sie kann
 
