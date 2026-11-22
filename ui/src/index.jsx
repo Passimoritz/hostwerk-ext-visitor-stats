@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
-import { LineChart, RefreshCw, Globe, FileText, Copy, ShieldCheck, Smartphone, Compass, Monitor, FileQuestion, Code2, Settings2, FolderPlus, RotateCcw, Users } from 'lucide-react';
-import { get, put, post, del, useApi, fmtBytes } from '@hostwerk/api';
+import { useEffect, useRef, useState } from 'react';
+import { LineChart, RefreshCw, Globe, FileText, Copy, ShieldCheck, Smartphone, Compass, Monitor, FileQuestion, Code2, Settings2, FolderPlus, RotateCcw, Users, Download, AlertTriangle } from 'lucide-react';
+import { get, put, post, del, useApi, fmtBytes, openExternal } from '@hostwerk/api';
 import { Btn, Seg, Empty, Loading, Modal, TileEmpty, InfoTip, Callout, SettingRow, Switch, Field, Sparkline, toast, confirmDialog } from '@hostwerk/ui';
 import * as HUI from '@hostwerk/ui';
+import { t } from '@hostwerk/i18n';
 import './style.css';
 
 // Seitenblatt aus Hostwerk (neuere Versionen) – die Seite bleibt daneben sichtbar; ältere Versionen zeigen denselben Inhalt als Dialog
@@ -13,9 +14,12 @@ const Sheet = HUI.SideSheet || Modal;
  * logs of Hostwerk's web servers, plus the optional counter script and the settings.
  * Texts are English; German comes from locales/de.json (translated automatically, also inside JSX).
  */
-const RANGES = [{ id: 'day', label: 'Today' }, { id: 'week', label: '7 days' }, { id: 'month', label: '30 days' }];
+const RANGES = [{ id: 'day', label: 'Today' }, { id: 'yesterday', label: 'Yesterday' }, { id: 'week', label: '7 days' }, { id: 'month', label: '30 days' }];
+const HOURLY = (range) => range === 'day' || range === 'yesterday';
 const DEVICE = { desktop: 'Computer', mobile: 'Phone', tablet: 'Tablet' };
-const nf = (n) => Number(n || 0).toLocaleString();
+// Numbers and dates in Hostwerk's language (like the core: en-GB / de-DE), not in the browser's
+const loc = () => ((document.documentElement.lang || 'de').startsWith('en') ? 'en-GB' : 'de-DE');
+const nf = (n) => Number(n || 0).toLocaleString(loc());
 const label = (k) => DEVICE[k] || (k === 'Other' ? 'Other' : k === '(other)' ? '(others)' : k);
 
 function Trend({ cur, prev }) {
@@ -26,8 +30,8 @@ function Trend({ cur, prev }) {
 
 /** Bars per day (or per hour for "today") – drawn with the theme colours, the numbers also as text for screen readers. */
 function Chart({ r }) {
-  const day = r.range === 'day';
-  const data = r.series.map((x) => ({ k: day ? `${String(x.hour).padStart(2, '0')}:00` : new Date(`${x.day}T12:00:00`).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'numeric' }), v: day ? x.views : x.visitors }));
+  const day = HOURLY(r.range);
+  const data = r.series.map((x) => ({ k: day ? `${String(x.hour).padStart(2, '0')}:00` : new Date(`${x.day}T12:00:00`).toLocaleDateString(loc(), { weekday: 'short', day: 'numeric', month: 'numeric' }), v: day ? x.views : x.visitors }));
   const max = Math.max(1, ...data.map((d) => d.v));
   const w = 100 / data.length;
   return (
@@ -46,7 +50,8 @@ function Chart({ r }) {
   );
 }
 
-function Bars({ title, icon: Icon, rows, total, empty, tip, mono }) {
+/** open(key): makes an entry a button (pages and 404s open their address on the site). */
+function Bars({ title, icon: Icon, rows, total, empty, tip, mono, open }) {
   const max = Math.max(1, ...rows.map((r) => r[1]));
   return (
     <div className="card">
@@ -56,7 +61,9 @@ function Bars({ title, icon: Icon, rows, total, empty, tip, mono }) {
           {rows.map(([k, n]) => (
             <li key={k} className="vst-row" title={total ? `${Math.round((n / total) * 100)} %` : undefined}>
               <span className="vst-fill" aria-hidden="true" style={{ width: `${(n / max) * 100}%` }} />
-              <span className={`vst-key ellipsis ${mono ? 'mono' : ''}`}>{label(k)}</span>
+              {open && k !== '(other)'
+                ? <button type="button" className={`vst-key vst-link ellipsis ${mono ? 'mono' : ''}`} title={t('Open {path}', { path: k })} onClick={() => open(k)}>{label(k)}</button>
+                : <span className={`vst-key ellipsis ${mono ? 'mono' : ''}`} title={label(k)}>{label(k)}</span>}
               <span className="vst-num">{nf(n)}</span>
             </li>
           ))}
@@ -69,7 +76,11 @@ function Bars({ title, icon: Icon, rows, total, empty, tip, mono }) {
 function Script({ s }) {
   const copy = async () => { try { await navigator.clipboard.writeText(s.snippet); toast.success('Copied'); } catch { toast.error('Could not copy'); } };
   const files = async () => {
-    try { const r = await post('/visitor-stats/counter-file'); toast.success(r.files.length === 1 ? 'Counter file in 1 site folder' : `Counter file in ${r.files.length} site folders`); } catch (e) { toast.error(e); }
+    try {
+      const r = await post('/visitor-stats/counter-file');
+      if (!r.files.length) toast.error('No site folder found – check the folders of your web servers.');
+      else toast.success(r.files.length === 1 ? 'Counter file in 1 site folder' : `Counter file in ${r.files.length} site folders`);
+    } catch (e) { toast.error(e); }
   };
   return (
     <section className="stack vst-sec" aria-label="Counter script">
@@ -91,7 +102,11 @@ function Script({ s }) {
 function Settings({ s, q, onSaved }) {
   const [ignore, setIgnore] = useState((s.cfg.ignore || []).join(', '));
   const [days, setDays] = useState(String(s.cfg.retentionDays));
-  const save = async (patch) => { try { onSaved(await put(`/visitor-stats/settings${q}`, patch)); toast.success('Saved'); } catch (e) { toast.error(e); } };
+  const daysOk = /^\d+$/.test(days) && Number(days) >= 30 && Number(days) <= 1000;
+  // The server may leave out what it cannot use (paths without a leading "/") – show what was really saved
+  const save = async (patch) => {
+    try { const d = await put(`/visitor-stats/settings${q}`, patch); onSaved(d); setIgnore((d.cfg.ignore || []).join(', ')); setDays(String(d.cfg.retentionDays)); toast.success('Saved'); } catch (e) { toast.error(e); }
+  };
   const reset = async () => {
     if (!(await confirmDialog({ title: 'Start over?', text: 'All numbers are deleted and the logs that still exist are read again. Older days whose logs are gone are lost.', confirm: 'Start over', danger: true }))) return;
     try { onSaved(await del(`/visitor-stats/data${q}`)); toast.success('Read again'); } catch (e) { toast.error(e); }
@@ -100,8 +115,8 @@ function Settings({ s, q, onSaved }) {
     <section className="stack vst-sec" aria-label="Settings">
       <div>
         <SettingRow title="Count visits from this PC" text="Off = your own clicks on localhost do not count."><Switch checked={!!s.cfg.countLocal} onChange={(v) => save({ countLocal: v })} /></SettingRow>
-        <Field label="Keep days" hint="30 to 1000 days."><div className="row-tight"><input className="input sm vst-num-input" inputMode="numeric" aria-label="Keep days" value={days} onChange={(e) => setDays(e.target.value.replace(/\D/g, ''))} /><Btn className="sm" onClick={() => save({ retentionDays: Number(days) })}>Save</Btn></div></Field>
-        <Field label="Leave out paths" hint="Starting with, separated by commas – for example /admin, /api"><div className="row-tight"><input className="input sm mono grow" aria-label="Leave out paths" value={ignore} placeholder="/admin, /api" onChange={(e) => setIgnore(e.target.value)} /><Btn className="sm" onClick={() => save({ ignore: ignore.split(',').map((x) => x.trim()).filter(Boolean) })}>Save</Btn></div></Field>
+        <Field label="Keep days" hint="30 to 1000 days."><div className="row-tight"><input className="input sm vst-num-input" inputMode="numeric" aria-label="Keep days" value={days} onChange={(e) => setDays(e.target.value.replace(/\D/g, ''))} /><Btn className="sm" disabled={!daysOk} onClick={() => save({ retentionDays: Number(days) })}>Save</Btn></div></Field>
+        <Field label="Leave out paths" hint="Starting with, separated by commas – for example /admin, /api. Counts for new log lines; “Start over” applies it to the logs that still exist."><div className="row-tight"><input className="input sm mono grow" aria-label="Leave out paths" value={ignore} placeholder="/admin, /api" onChange={(e) => setIgnore(e.target.value)} /><Btn className="sm" onClick={() => save({ ignore: ignore.split(',').map((x) => x.trim()).filter(Boolean) })}>Save</Btn></div></Field>
         <Btn className="sm ghost danger" icon={RotateCcw} onClick={reset}>Start over</Btn>
       </div>
     </section>
@@ -119,6 +134,7 @@ function Logs({ s }) {
           <li key={l.path} className="list-item">
             <span className="badge">{x.name}</span>
             <code className="grow ellipsis small" title={l.path}>{l.path}</code>
+            {l.broken && <span className="badge warn" title={t('This packed log cannot be unpacked (damaged or cut off) and is skipped.')}><AlertTriangle size={12} aria-hidden="true" />damaged – skipped</span>}
             <span className="tiny muted">{l.size === null ? 'not there yet' : fmtBytes(l.size)}</span>
           </li>
         )))}
@@ -147,12 +163,33 @@ function VisitorStatsPage() {
   const [busy, setBusy] = useState(false);
   const [setup, setSetup] = useState(false);
   const q = `?site=${encodeURIComponent(site)}&range=${range}`;
-  const scan = async () => { setBusy(true); try { st.setData(await post(`/visitor-stats/scan${q}`)); } catch (e) { toast.error(e); } setBusy(false); };
+  const qNow = useRef(q);
+  qNow.current = q;
+  // Reading can take up to 20 s – if the site or period changed meanwhile, its answer belongs to the old choice
+  const scan = async () => {
+    setBusy(true);
+    const asked = q;
+    try { const d = await post(`/visitor-stats/scan${asked}`); if (asked === qNow.current) st.setData(d); else st.reload({ silent: true }); } catch (e) { toast.error(e); }
+    setBusy(false);
+  };
   useEffect(() => { scan(); }, []); // eslint-disable-line react-hooks/exhaustive-deps -- read new lines once when the page opens
   const s = st.data;
   if (!s) return st.error ? <Empty icon={LineChart} title="Could not load" text={String(st.error.message || st.error)} /> : <Loading />;
   const r = s.report;
-  const t = r.totals;
+  const tot = r.totals;
+  // Pages and 404s open on the site – only when it is clear which site (one chosen, or only one there)
+  const one = site !== 'all' ? s.sites.find((x) => x.id === site) : s.sites.length === 1 ? s.sites[0] : null;
+  const openPath = one && one.url ? (p) => openExternal(`${one.url.replace(/\/$/, '')}${p.startsWith('/') ? p : `/${p}`}`) : null;
+  const exportCsv = () => {
+    const cell = (v) => { const x = String(v); return /[",;\n]/.test(x) ? `"${x.replace(/"/g, '""')}"` : x; };
+    const lists = [['Pages', r.pages], ['Sources', r.refs], ['Devices', r.devices], ['Browsers', r.browsers], ['Systems', r.os], ['Not found (404)', r.notFound]];
+    const rows = [[t('List'), t('Entry'), t('Count')], ...lists.flatMap(([name, l]) => l.map(([k, n]) => [t(name), label(k), n]))];
+    const series = r.series.map((x) => [HOURLY(r.range) ? t('Page views per hour') : t('Visitors per day'), x.day || `${String(x.hour).padStart(2, '0')}:00`, HOURLY(r.range) ? x.views : x.visitors]);
+    // BOM: Excel reads umlauts correctly
+    const blob = new Blob([`﻿${[...rows, ...series].map((x) => x.map(cell).join(',')).join('\r\n')}\r\n`], { type: 'text/csv;charset=utf-8' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `visitor-stats-${one ? one.id : 'all'}-${range}.csv`; a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  };
   return (
     <div className="page fade-in vst">
       <div className="page-head">
@@ -162,7 +199,7 @@ function VisitorStatsPage() {
         </div>
         <div className="actions vst-wrap">
           {s.sites.length > 1 && (
-            <select className="select sm" aria-label="Site" value={site} onChange={(e) => setSite(e.target.value)}>
+            <select className="select sm vst-site" aria-label="Site" value={site} onChange={(e) => setSite(e.target.value)}>
               <option value="all">All sites</option>
               {s.sites.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
             </select>
@@ -181,24 +218,24 @@ function VisitorStatsPage() {
       ) : (
         <>
           <div className="grid grid-4 vst-grid">
-            <div className="card card-pad stat"><div className="k">Visitors</div><div className="v">{nf(t.visitors)}</div><Trend cur={t.visitors} prev={r.prev.visitors} /></div>
-            <div className="card card-pad stat"><div className="k">Page views</div><div className="v">{nf(t.views)}</div><Trend cur={t.views} prev={r.prev.views} /></div>
-            <div className="card card-pad stat"><div className="k">Pages per visitor</div><div className="v">{t.visitors ? (t.views / t.visitors).toFixed(1) : '–'}</div><span className="s muted">{r.beacon ? 'from the counter script' : 'from the logs'}</span></div>
-            <div className="card card-pad stat"><div className="k">Bots left out</div><div className="v">{nf(t.bots)}</div><span className="s muted">crawlers, checks, probes</span></div>
+            <div className="card card-pad stat"><div className="k">Visitors</div><div className="v">{nf(tot.visitors)}</div><Trend cur={tot.visitors} prev={r.prev.visitors} /></div>
+            <div className="card card-pad stat"><div className="k">Page views</div><div className="v">{nf(tot.views)}</div><Trend cur={tot.views} prev={r.prev.views} /></div>
+            <div className="card card-pad stat"><div className="k">Pages per visitor</div><div className="v">{tot.visitors ? (tot.views / tot.visitors).toLocaleString(loc(), { minimumFractionDigits: 1, maximumFractionDigits: 1 }) : '–'}</div><span className="s muted">{r.beacon ? 'from the counter script' : 'from the logs'}</span></div>
+            <div className="card card-pad stat"><div className="k">Bots left out</div><div className="v">{nf(tot.bots)}</div><span className="s muted">crawlers, checks, probes</span></div>
           </div>
           <div className="card vst-grid">
-            <div className="card-head"><LineChart size={16} /><h3>{range === 'day' ? 'Page views per hour' : 'Visitors per day'}</h3></div>
+            <div className="card-head"><LineChart size={16} /><h3 className="grow">{HOURLY(range) ? 'Page views per hour' : 'Visitors per day'}</h3><Btn className="xs ghost" icon={Download} onClick={exportCsv} title="Export this view as CSV">CSV</Btn></div>
             <div className="card-body"><Chart r={r} /></div>
           </div>
           <div className="grid grid-3 vst-grid vst-lists">
-            <Bars title="Pages" icon={FileText} rows={r.pages} total={t.views} empty="No page views in this period." mono />
-            <Bars title="Sources" icon={Compass} rows={r.refs} total={t.views} empty="Nobody came from another site – visits were direct or from bookmarks." tip={<InfoTip title="Sources">Other websites that linked to yours (search engines, social media …). Links between your own pages do not count. Many apps and browsers send no source at all.</InfoTip>} />
-            <Bars title="Devices" icon={Smartphone} rows={r.devices} total={t.visitors} empty="No visitors in this period." />
-            <Bars title="Browsers" icon={Globe} rows={r.browsers} total={t.visitors} empty="No visitors in this period." />
-            <Bars title="Systems" icon={Monitor} rows={r.os} total={t.visitors} empty="No visitors in this period." />
-            <Bars title="Not found (404)" icon={FileQuestion} rows={r.notFound} empty="No broken links – nobody hit a missing page." mono tip={<InfoTip title="Not found">Pages people asked for that do not exist – often old links. Probes for weak spots (like /wp-login.php) count as bots and are not listed.</InfoTip>} />
+            <Bars title="Pages" icon={FileText} rows={r.pages} total={tot.views} empty="No page views in this period." mono open={openPath} />
+            <Bars title="Sources" icon={Compass} rows={r.refs} total={tot.views} empty="Nobody came from another site – visits were direct or from bookmarks." tip={<InfoTip title="Sources">Other websites that linked to yours (search engines, social media …). Links between your own pages do not count. Many apps and browsers send no source at all.</InfoTip>} />
+            <Bars title="Devices" icon={Smartphone} rows={r.devices} total={tot.visitors} empty="No visitors in this period." />
+            <Bars title="Browsers" icon={Globe} rows={r.browsers} total={tot.visitors} empty="No visitors in this period." />
+            <Bars title="Systems" icon={Monitor} rows={r.os} total={tot.visitors} empty="No visitors in this period." />
+            <Bars title="Not found (404)" icon={FileQuestion} rows={r.notFound} empty="No broken links – nobody hit a missing page." mono open={openPath} tip={<InfoTip title="Not found">Pages people asked for that do not exist – often old links. Probes for weak spots (like /wp-login.php) count as bots and are not listed.</InfoTip>} />
           </div>
-          <p className="tiny muted vst-foot">{s.lastScan ? `Last read ${new Date(s.lastScan).toLocaleTimeString()}` : ''}</p>
+          <p className="tiny muted vst-foot">{s.lastScan ? `Last read ${new Date(s.lastScan).toDateString() === new Date().toDateString() ? new Date(s.lastScan).toLocaleTimeString(loc()) : new Date(s.lastScan).toLocaleString(loc())}` : ''}</p>
         </>
       )}
       {setup && <SetupDialog s={s} q={q} onSaved={st.setData} onClose={() => setSetup(false)} />}
@@ -209,8 +246,10 @@ function VisitorStatsPage() {
 /** Overview tile: visitors today, page views, the last 7 days as a small line. */
 function VisitorStatsTile() {
   const [d, setD] = useState(null);
-  useEffect(() => { let on = true; const load = () => get('/visitor-stats/tile').then((x) => { if (on) setD(x); }).catch(() => {}); load(); const t = setInterval(load, 60000); return () => { on = false; clearInterval(t); }; }, []);
+  useEffect(() => { let on = true; const load = () => get('/visitor-stats/tile').then((x) => { if (on) setD(x); }).catch(() => { if (on) setD((p) => p || { failed: true }); }); load(); const t = setInterval(load, 60000); return () => { on = false; clearInterval(t); }; }, []);
   if (!d) return <div className="card-body"><span className="small muted">…</span></div>;
+  // Not reachable (extension restarting, server busy): say so instead of dots forever – the next minute tries again
+  if (d.failed) return <TileEmpty icon={LineChart} text="Could not load" href="#/ext/visitor-stats" action="Open" />;
   if (!d.sites) return <TileEmpty icon={Globe} text="No web server yet." href="#/web" action="Web servers" />;
   if (!d.hasData) return <TileEmpty icon={LineChart} text="No visitors counted yet." href="#/ext/visitor-stats" action="Open" />;
   return (

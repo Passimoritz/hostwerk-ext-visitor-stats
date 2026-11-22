@@ -70,6 +70,8 @@ test('sorting: bots, probes, assets, 404, own referrers, devices', () => {
   assert.strictEqual(P.classify(hit({ method: 'HEAD' })).kind, 'skip');
   assert.strictEqual(P.classify(hit({ status: 500 })).kind, 'skip');
   assert.deepStrictEqual(P.classify(hit({ status: 404, path: '/nope' })), { kind: 'notfound', path: '/nope' });
+  assert.deepStrictEqual(P.classify(hit({ status: 404, path: '/%C3%BCber-uns' })), { kind: 'notfound', path: '/über-uns' }, '404s decoded like the pages');
+  assert.deepStrictEqual(P.classify(hit({ status: 404, path: '/%E0%A4%A' })), { kind: 'notfound', path: '/%E0%A4%A' }, 'broken encoding stays as it is');
   assert.strictEqual(P.classify(hit({ ref: 'https://www.example.test/x' }), own).ref, '');
   assert.strictEqual(P.classify(hit({ ref: 'https://www.google.de/' }), own).ref, 'google.de');
   const c = P.classify(hit({ path: '/index.html' }), own);
@@ -238,4 +240,103 @@ test('settings are checked, counter files only where missing', () => {
 
 test('every German text has a value', () => {
   for (const [k, v] of Object.entries(de)) if (k !== '$patterns') assert.ok(typeof v === 'string' && v.trim(), k);
+});
+
+test('Hostwerk\'s "vcombined" lines (host:port in front, duration behind) – Apache and nginx', async () => {
+  const ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36';
+  const a = P.parseLine(`shop.test:8080 203.0.113.7 - - [21/Oct/2026:12:00:00 +0000] "GET /a HTTP/1.1" 200 512 "http://shop.test/" "${ua}" 1234`);
+  assert.strictEqual(a.ip, '203.0.113.7');
+  assert.strictEqual(a.path, '/a');
+  assert.strictEqual(a.host, 'shop.test');
+  assert.strictEqual(a.ua, ua);
+  const n = P.parseLine(`_:80 2001:db8::1 - - [21/Oct/2026:12:00:00 +0000] "GET /b HTTP/1.1" 404 0 "-" "${ua}" 0.012`);
+  assert.strictEqual(n.ip, '2001:db8::1');
+  assert.strictEqual(n.host, '', 'nginx catch-all "_" is no host name');
+  assert.strictEqual(P.parseLine(`::1 - - [21/Oct/2026:12:00:00 +0000] "GET /c HTTP/1.1" 200 1 "-" "${ua}"`).ip, '::1', 'plain combined with IPv6 still works');
+  // end to end: own host from the line is not a source
+  const dir = tmp();
+  const main = path.join(dir, 'w1_access.log');
+  fs.writeFileSync(main, `shop.test:80 203.0.113.7 - - [21/Oct/2026:12:00:00 +0000] "GET / HTTP/1.1" 200 5 "http://shop.test/x" "${ua}" 99\n`);
+  const s = new VisitorStats({ dir: path.join(dir, 'data'), now: () => NOW, sites: () => [{ id: 'w1', name: 'W', logs: [main], hosts: [] }] });
+  await s.scan();
+  const r = s.report('w1', 'day');
+  assert.strictEqual(r.totals.views, 1);
+  assert.deepStrictEqual(r.refs, []);
+});
+
+test('Hostwerk\'s own rotation (logs/archiv/<stem>.<date>.log.gz, copy and empty) loses nothing', async () => {
+  const dir = tmp();
+  const main = path.join(dir, 'w1_access.log');
+  const ua = 'Mozilla/5.0 (Windows NT 10.0) Firefox/131.0';
+  const line = (i, p) => `w.test:80 203.0.113.${i} - - [21/Oct/2026:12:${String(i).padStart(2, '0')}:00 +0000] "GET ${p} HTTP/1.1" 200 1 "-" "${ua}" 5\n`;
+  fs.writeFileSync(main, line(1, '/a'));
+  const s = new VisitorStats({ dir: path.join(dir, 'data'), now: () => NOW, sites: () => [{ id: 'w1', name: 'W', logs: [main], hosts: [] }] });
+  await s.scan();
+  // more lines, then rotation before the next scan: copied into the archive and emptied
+  fs.appendFileSync(main, line(2, '/b'));
+  fs.mkdirSync(path.join(dir, 'archiv'));
+  fs.writeFileSync(path.join(dir, 'archiv', 'w1_access.2026-10-21.log.gz'), zlib.gzipSync(fs.readFileSync(main)));
+  fs.writeFileSync(path.join(dir, 'archiv', 'w1_error.2026-10-21.log.gz'), zlib.gzipSync(line(9, '/x')));
+  fs.writeFileSync(main, line(3, '/c'));
+  await s.scan();
+  assert.deepStrictEqual(toMap(s.report('w1', 'day').pages), { '/a': 1, '/b': 1, '/c': 1 });
+});
+
+test('left-out paths also hold for the counter script; an empty "keep days" changes nothing', async () => {
+  const dir = tmp();
+  const main = path.join(dir, 'w_access.log');
+  const ua = 'Mozilla/5.0 (Windows NT 10.0) Firefox/131.0';
+  fs.writeFileSync(main, [
+    `203.0.113.1 - - [21/Oct/2026:12:00:00 +0000] "GET /.hostwerk-count?p=%2Fadmin%2Fusers&r=&d=d HTTP/1.1" 200 0 "-" "${ua}"`,
+    `203.0.113.1 - - [21/Oct/2026:12:00:01 +0000] "GET /.hostwerk-count?p=%2Fshop&r=&d=d HTTP/1.1" 200 0 "-" "${ua}"`,
+    `203.0.113.1 - - [21/Oct/2026:12:00:02 +0000] "GET /admin/ HTTP/1.1" 200 0 "-" "${ua}"`,
+  ].join('\n') + '\n');
+  const s = new VisitorStats({ dir: path.join(dir, 'data'), now: () => NOW, sites: () => [{ id: 'w', name: 'W', logs: [main], hosts: [] }] });
+  s.saveSettings({ ignore: ['/admin'], retentionDays: 90 });
+  await s.scan();
+  const r = s.report('w', 'day');
+  assert.deepStrictEqual(toMap(r.pages), { '/shop': 1 });
+  for (const v of ['', null, ' ', 'abc', true, -5, 0]) assert.strictEqual(s.saveSettings({ retentionDays: v }).retentionDays, 90, JSON.stringify(v));
+  assert.strictEqual(s.saveSettings({ retentionDays: '120' }).retentionDays, 120);
+});
+
+test('damaged .gz archives: listed as broken, the other logs are still read, not read again and again', async () => {
+  const dir = tmp();
+  const main = path.join(dir, 'w1_access.log');
+  const ua = 'Mozilla/5.0 (Windows NT 10.0) Firefox/131.0';
+  const line = (i, p) => `w.test:80 203.0.113.${i} - - [21/Oct/2026:12:${String(i).padStart(2, '0')}:00 +0000] "GET ${p} HTTP/1.1" 200 1 "-" "${ua}" 5\n`;
+  fs.writeFileSync(main, line(1, '/a'));
+  fs.mkdirSync(path.join(dir, 'archiv'));
+  const bad = path.join(dir, 'archiv', 'w1_access.2026-10-20.log.gz');
+  fs.writeFileSync(bad, Buffer.from('this is no gzip at all'));
+  const cut = path.join(dir, 'archiv', 'w1_access.2026-10-19.log.gz');
+  const full = zlib.gzipSync(Buffer.from(Array.from({ length: 400 }, (_, i) => line(i % 50 + 2, `/old${i}`)).join('')));
+  fs.writeFileSync(cut, full.subarray(0, Math.floor(full.length * 0.6))); // cut off in the middle
+  const s = new VisitorStats({ dir: path.join(dir, 'data'), now: () => NOW, sites: () => [{ id: 'w1', name: 'W', logs: [main], hosts: [] }] });
+  await s.scan();
+  assert.strictEqual(s.lastError, null, 'the scan goes on');
+  assert.ok(toMap(s.report('w1', 'day').pages)['/a'], 'the plain log is read');
+  const logs = s.siteList()[0].logs;
+  assert.ok(logs.find((l) => l.path === bad).broken, 'unreadable archive marked');
+  assert.ok(logs.find((l) => l.path === cut).broken, 'cut-off archive marked');
+  assert.ok(!logs.find((l) => l.path === main).broken);
+  const views = s.report('w1', 'day').totals.views;
+  await s.scan();
+  assert.strictEqual(s.report('w1', 'day').totals.views, views, 'nothing counted twice');
+  fs.writeFileSync(bad, zlib.gzipSync(line(9, '/fixed')));
+  await s.scan();
+  assert.ok(!s.siteList()[0].logs.find((l) => l.path === bad).broken, 'a replaced file is read again');
+});
+
+test('"yesterday": one day by the hour, compared with the day before', () => {
+  const a = new Aggregator(null);
+  const hit = (path, ip) => ({ kind: 'page', path, ref: '', device: 'desktop', browser: 'Firefox', os: 'Windows' });
+  a.add('w', hit('/y'), NOW - 86400000, '203.0.113.1');
+  a.add('w', hit('/t'), NOW, '203.0.113.2');
+  a.add('w', hit('/b'), NOW - 2 * 86400000, '203.0.113.3');
+  a.finish(NOW, 400);
+  const r = a.report(['w'], 'yesterday', NOW);
+  assert.strictEqual(r.series.length, 24, 'per hour');
+  assert.deepStrictEqual(r.pages.map((x) => x[0]), ['/y']);
+  assert.strictEqual(r.prev.views, 1, 'day before yesterday');
 });

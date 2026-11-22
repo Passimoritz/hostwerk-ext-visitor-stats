@@ -15,6 +15,7 @@
   "Copied": "Kopiert",
   "Could not copy": "Konnte nicht kopieren",
   "Counter file in 1 site folder": "Zähldatei in 1 Website-Ordner",
+  "No site folder found – check the folders of your web servers.": "Kein Website-Ordner gefunden – prüf die Ordner deiner Webserver.",
   "Counter script (optional)": "Zählskript (optional)",
   "Counter script": "Zählskript",
   "The logs are enough for normal websites. For single-page apps (React, Vue …) or pages served from a cache, put this script into your page. It sets no cookies, stores nothing in the browser and does nothing when Do Not Track is on. Its request goes to your own site and lands in the same log.": "Für normale Websites reichen die Protokolle. Für Single-Page-Apps (React, Vue …) oder Seiten aus einem Zwischenspeicher bau dieses Skript in deine Seite ein. Es setzt keine Cookies, speichert nichts im Browser und tut nichts, wenn „Do Not Track“ an ist. Seine Anfrage geht an deine eigene Website und landet im selben Protokoll.",
@@ -34,7 +35,7 @@
   "30 to 1000 days.": "30 bis 1000 Tage.",
   "Save": "Speichern",
   "Leave out paths": "Pfade auslassen",
-  "Starting with, separated by commas – for example /admin, /api": "Pfadanfänge, durch Kommas getrennt – zum Beispiel /admin, /api",
+  "Starting with, separated by commas – for example /admin, /api. Counts for new log lines; “Start over” applies it to the logs that still exist.": "Pfadanfänge, durch Kommas getrennt – zum Beispiel /admin, /api. Gilt für neue Protokollzeilen; „Neu anfangen“ wendet es auf die noch vorhandenen Protokolle an.",
   "Logs read": "Gelesene Protokolle",
   "Which logs?": "Welche Protokolle?",
   "The access log every Hostwerk web server writes (Apache and nginx in the combined format, Caddy as JSON), plus log lines from the server's own settings. Rotated and gzipped files are read too – each line counts only once.": "Das Zugriffsprotokoll, das jeder Hostwerk-Webserver schreibt (Apache und nginx im Combined-Format, Caddy als JSON), dazu Protokoll-Zeilen aus den eigenen Einstellungen des Servers. Rotierte und gepackte Dateien werden mitgelesen – jede Zeile zählt nur einmal.",
@@ -78,12 +79,29 @@
   "Visitors today": "Besucher heute",
   "1 page view": "1 Seitenaufruf",
   "Set up …": "Einrichten …",
-  "Set up visitor stats": "Besucherstatistik einrichten",
+  "Set up visitor stats": "Besucher-Statistik einrichten",
   "Close": "Schließen",
   "As soon as someone opens one of your sites, it shows up here. Your own visits from this PC do not count – switch that on under “Set up …” to try it out.": "Sobald jemand eine deiner Websites öffnet, erscheint das hier. Deine eigenen Besuche von diesem PC zählen nicht – schalte das unter „Einrichten …“ ein, um es auszuprobieren.",
   "$patterns": [
-    ["Counter file in {} site folders", "Zähldatei in {} Website-Ordnern"],
-    ["Last read {}", "Zuletzt gelesen {}"],
-    ["{} page views", "{} Seitenaufrufe"]
-  ]
+    [
+      "Counter file in {} site folders",
+      "Zähldatei in {} Website-Ordnern"
+    ],
+    [
+      "Last read {}",
+      "Zuletzt gelesen {}"
+    ],
+    [
+      "{} page views",
+      "{} Seitenaufrufe"
+    ]
+  ],
+  "Yesterday": "Gestern",
+  "Open {path}": "{path} öffnen",
+  "This packed log cannot be unpacked (damaged or cut off) and is skipped.": "Dieses gepackte Protokoll lässt sich nicht entpacken (beschädigt oder abgeschnitten) und wird übersprungen.",
+  "damaged – skipped": "beschädigt – übersprungen",
+  "Export this view as CSV": "Diese Ansicht als CSV exportieren",
+  "List": "Liste",
+  "Entry": "Eintrag",
+  "Count": "Anzahl"
 }

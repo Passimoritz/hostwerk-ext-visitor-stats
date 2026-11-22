@@ -7,8 +7,10 @@
  */
 
 const MONTHS = { Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5, Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11 };
-// host ident user [time] "request" status bytes "referer" "user agent" – quotes inside are escaped (\" or \x22)
-const COMBINED = /^(\S+) \S+ \S+ \[([^\]]+)\] "((?:[^"\\]|\\.)*)" (\d{3}) (\S+)(?: "((?:[^"\\]|\\.)*)" "((?:[^"\\]|\\.)*)")?/;
+// [vhost:port] host ident user [time] "request" status bytes "referer" "user agent" [duration] – quotes inside are escaped
+// (\" or \x22). Hostwerk writes "vcombined" (Apache %v:%{local}p, nginx $server_name:$server_port in front); plain
+// "combined" (older lines, own CustomLog lines) starts with the client address.
+const COMBINED = /^(?:(\S+?):(\d+) )?(\S+) \S+ \S+ \[([^\]]+)\] "((?:[^"\\]|\\.)*)" (\d{3}) (\S+)(?: "((?:[^"\\]|\\.)*)" "((?:[^"\\]|\\.)*)")?/;
 const BEACON = '/.hostwerk-count';
 
 /** 10/Oct/2026:13:55:36 +0200 → milliseconds */
@@ -33,11 +35,12 @@ function parseLine(line) {
   if (line[0] === '{') return parseCaddy(line);
   const m = COMBINED.exec(line);
   if (!m) return null;
-  const t = parseClf(m[2]);
+  const t = parseClf(m[4]);
   if (!Number.isFinite(t)) return null;
-  const req = unescape(m[3]).split(' ');
+  const req = unescape(m[5]).split(' ');
   if (req.length < 2) return null;
-  return { t, ip: m[1], method: req[0], ...splitTarget(req[1]), status: Number(m[4]), ref: dash(unescape(m[6] || '')), ua: dash(unescape(m[7] || '')), host: '' };
+  const vhost = m[1] && m[1] !== '_' && m[1] !== '-' ? m[1].toLowerCase() : '';
+  return { t, ip: m[3], method: req[0], ...splitTarget(req[1]), status: Number(m[6]), ref: dash(unescape(m[8] || '')), ua: dash(unescape(m[9] || '')), host: vhost };
 }
 
 /** Caddy's JSON access log (one object per line). */
@@ -132,16 +135,17 @@ function classify(hit, own = new Set()) {
   }
   if (hit.method !== 'GET') return { kind: 'skip' };
   if (IGNORE.test(hit.path) || ASSET.test(hit.path)) return { kind: 'skip' };
-  if (hit.status === 404) return { kind: 'notfound', path: hit.path.slice(0, 300) };
+  // decoded like the pages (/über-uns, not /%C3%BCber-uns)
+  if (hit.status === 404) return { kind: 'notfound', path: decodePath(hit.path).slice(0, 300) };
   if (!((hit.status >= 200 && hit.status < 300) || hit.status === 304)) return { kind: 'skip' };
   return { kind: 'view', ...base, path: normPath(hit.path), ref: refHost(hit.ref, own) };
 }
 
+const decodePath = (p) => { try { return decodeURI(p); } catch { return p; } };
+
 /** /index.html and /index.php count as / – decoded, at most 300 characters. */
 function normPath(p) {
-  let s = p;
-  try { s = decodeURI(p); } catch { /* keep */ }
-  return s.replace(/\/index\.(html?|php)$/i, '/').slice(0, 300) || '/';
+  return decodePath(p).replace(/\/index\.(html?|php)$/i, '/').slice(0, 300) || '/';
 }
 
 module.exports = { parseLine, parseClf, parseCaddy, shortIp, isLoopback, classify, refHost, device, browser, system, normPath, BEACON };

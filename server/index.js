@@ -1,7 +1,7 @@
 'use strict';
 /*
  * Native part of "Visitor stats" (SDK 2.7):
- *   GET    /api/visitor-stats?site=all|<id>&range=day|week|month → sites, report, settings, last scan, counter script
+ *   GET    /api/visitor-stats?site=all|<id>&range=day|yesterday|week|month → sites (with url), report, settings, last scan, counter script
  *   GET    /api/visitor-stats/tile                                → today and the last 7 days (overview tile)
  *   POST   /api/visitor-stats/scan                                → read new log lines now
  *   PUT    /api/visitor-stats/settings                            → { retentionDays, countLocal, ignore[] }
@@ -31,7 +31,11 @@ function siteSource(ctx) {
     }
     const vhosts = (inst.vhosts || []).filter((v) => v && v.domain);
     const hosts = vhosts.flatMap((v) => [v.domain, ...String(v.aliases || '').split(/\s+/)]).filter(Boolean);
-    return { id: inst.id, name: inst.name || inst.id, engine: inst.type, logs, hosts, roots: [inst.docRoot, ...vhosts.map((v) => v.root)].filter(Boolean) };
+    // Address of the site on this PC – the page opens a page or a 404 path there
+    let url = null;
+    try { url = ctx.web.urls ? (ctx.web.urls(inst)[0] || {}).url || null : null; } catch { url = null; }
+    if (!url && inst.httpPort) url = `http://localhost${inst.httpPort === 80 ? '' : `:${inst.httpPort}`}/`;
+    return { id: inst.id, name: inst.name || inst.id, engine: inst.type, logs, hosts, url, roots: [inst.docRoot, ...vhosts.map((v) => v.root)].filter(Boolean) };
   });
 }
 

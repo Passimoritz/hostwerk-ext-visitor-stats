@@ -1,3 +1,10 @@
+## Unreleased
+
+- Range “Yesterday” next to Today/7/30 days, CSV export of the current view, a click on a page or a 404 entry opens that address on the site (when one site is chosen) / Bereich „Gestern“ neben Heute/7/30 Tage, CSV-Export der aktuellen Ansicht, Klick auf eine Seite oder einen 404-Eintrag öffnet die Adresse auf der Website (wenn eine Website gewählt ist)
+- Damaged or cut-off .gz logs are marked under “Logs read” instead of being skipped silently, and no longer stop the other logs / Beschädigte oder abgeschnittene .gz-Protokolle stehen unter „Gelesene Protokolle“ statt still übersprungen zu werden und halten die übrigen nicht mehr auf
+- Fixes: Hostwerk’s “vcombined” log lines and its rotation into logs/archiv are read; left-out paths also hold for the counter script; “Keep days” could never be saved; 404 paths are shown decoded like pages; numbers and dates follow Hostwerk’s language; the tile says “Could not load” instead of dots forever; long paths show in full on hover; long site names no longer widen the site picker / Fehlerbehebungen: Hostwerks „vcombined“-Zeilen und die Rotation nach logs/archiv werden gelesen; ausgelassene Pfade gelten auch fürs Zählskript; „Tage aufbewahren“ ließ sich nie speichern; 404-Pfade dekodiert wie Seiten; Zahlen und Datum in Hostwerks Sprache; die Kachel zeigt „Konnte nicht laden“ statt endloser Punkte; lange Pfade beim Überfahren ganz lesbar; lange Website-Namen machen die Auswahl nicht mehr breit
+- Manifest: sdkVersion 3.16 / Manifest: sdkVersion 3.16
+
 ## 1.2.2
 
 - New animated icon and banner in the common Hostwerk style (isometric block). / Neues animiertes Symbol und Banner im gemeinsamen Hostwerk-Stil (isometrischer Block).

@@ -14,17 +14,23 @@ const crypto = require('crypto');
 
 const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-/** Log files of the web server configuration: the main file plus everything rotation made of it (.1, .2.gz, -20261021.gz …). */
+/** Log files of the web server configuration: the main file plus everything rotation made of it (.1, .2.gz, -20261021.gz,
+ * archiv/<stem>.2026-10-21.log.gz …). */
 function rotated(main) {
   const dir = path.dirname(main);
   const stem = path.basename(main).replace(/\.log$/i, '');
   const re = new RegExp(`^${esc(stem)}(?:[.-][\\w.-]*)?$`, 'i');
-  let names = [];
-  try { names = fs.readdirSync(dir); } catch { return []; }
-  return names
-    .filter((n) => re.test(n) && /\.log|\.gz$|\.\d+$/i.test(n.slice(stem.length) || '.log'))
-    .map((n) => path.join(dir, n))
-    .filter((f) => { try { return fs.statSync(f).isFile(); } catch { return false; } });
+  const out = [];
+  // Hostwerk's own rotation packs into logs/archiv/<stem>.<date>[-n].log.gz – lines written after the last scan are only there
+  for (const d of [dir, path.join(dir, 'archiv')]) {
+    let names = [];
+    try { names = fs.readdirSync(d); } catch { continue; }
+    out.push(...names
+      .filter((n) => re.test(n) && /\.log|\.gz$|\.\d+$/i.test(n.slice(stem.length) || '.log'))
+      .map((n) => path.join(d, n))
+      .filter((f) => { try { return fs.statSync(f).isFile(); } catch { return false; } }));
+  }
+  return out;
 }
 
 /** Further log paths written by hand into the web server's own settings (CustomLog / access_log / output file). */

@@ -95,9 +95,12 @@ class Aggregator {
    */
   report(sites, range = 'week', now = Date.now()) {
     const ids = sites && sites.length ? sites : Object.keys(this.data.sites);
-    const len = range === 'day' ? 1 : range === 'month' ? 30 : 7;
-    const days = Array.from({ length: len }, (_, i) => dayKey(now - (len - 1 - i) * 86400000));
-    const prevDays = Array.from({ length: len }, (_, i) => dayKey(now - (2 * len - 1 - i) * 86400000));
+    // "yesterday" is one day like "day", one day earlier (compared with the day before yesterday); both show hours
+    const hourly = range === 'day' || range === 'yesterday';
+    const end = range === 'yesterday' ? now - 86400000 : now;
+    const len = hourly ? 1 : range === 'month' ? 30 : 7;
+    const days = Array.from({ length: len }, (_, i) => dayKey(end - (len - 1 - i) * 86400000));
+    const prevDays = Array.from({ length: len }, (_, i) => dayKey(end - (2 * len - 1 - i) * 86400000));
     // Per day: the counter script's numbers if it reported that day, else the log's
     const part = (d) => (d.beacon && d.beacon.views ? d.beacon : d.log);
     const sum = { views: 0, visitors: 0, bots: 0 };
@@ -126,7 +129,7 @@ class Aggregator {
     return {
       range, days,
       totals: sum, prev,
-      series: range === 'day' ? hours.map((views, h) => ({ hour: h, views })) : series,
+      series: hourly ? hours.map((views, h) => ({ hour: h, views })) : series,
       pages: top(lists.pages, 20), refs: top(lists.refs, 12), devices: top(lists.devices, 3), browsers: top(lists.browsers, 8), os: top(lists.os, 8), notFound: top(lists.nf, 10),
       beacon,
       hasData: Object.values(this.data.sites).some((s) => Object.keys(s.days).length > 0),
