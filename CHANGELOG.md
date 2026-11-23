@@ -1,4 +1,4 @@
-## Unreleased
+## 1.3.0
 
 - Range “Yesterday” next to Today/7/30 days, CSV export of the current view, a click on a page or a 404 entry opens that address on the site (when one site is chosen) / Bereich „Gestern“ neben Heute/7/30 Tage, CSV-Export der aktuellen Ansicht, Klick auf eine Seite oder einen 404-Eintrag öffnet die Adresse auf der Website (wenn eine Website gewählt ist)
 - Damaged or cut-off .gz logs are marked under “Logs read” instead of being skipped silently, and no longer stop the other logs / Beschädigte oder abgeschnittene .gz-Protokolle stehen unter „Gelesene Protokolle“ statt still übersprungen zu werden und halten die übrigen nicht mehr auf
